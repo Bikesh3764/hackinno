@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -19,6 +20,8 @@ FRONT = Path(__file__).resolve().parent.parent / "frontend"
 app = FastAPI(title="MARS-09 Odyssey")
 # the GitHub Pages frontend calls this API from another origin
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST"], allow_headers=["*"])
+# JSON responses (maps, routes, logs) shrink 3-10x over the wire
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 M = Mission()
 LOCK = threading.Lock()
 
@@ -61,6 +64,7 @@ class PlanReq(BaseModel):
     start: list[int]
     goal: list[int]
     algo: str = "astar"
+    rrt: bool = True   # False: skip RRT* here; the console fetches it from /api/rrt afterwards
 
 
 class TargetReq(BaseModel):
@@ -100,7 +104,7 @@ def risk(req: RiskReq):
         M.set_risk(req.lam)
         s = M.summary()
         s.pop("elevation")
-        s["layers"] = M.layers()
+        s["layers"] = M.layers(only="cost")   # only the cost map depends on the Caution setting
         return J(s)
 
 
@@ -108,7 +112,14 @@ def risk(req: RiskReq):
 def plan(req: PlanReq):
     with LOCK:
         _ensure()
-        return J(M.plan(req.start, req.goal, req.algo))
+        return J(M.plan(req.start, req.goal, req.algo, req.rrt))
+
+
+@app.post("/api/rrt")
+def plan_rrt(req: PlanReq):
+    with LOCK:
+        _ensure()
+        return J(M.plan_rrt(req.start, req.goal))
 
 
 @app.post("/api/targets")

@@ -67,6 +67,19 @@ const canvas = $("map");
 const ctx = canvas.getContext("2d");
 
 // ------------------------------------------------------------------ API
+// Plotly is 4.8 MB, so it loads only when a chart is first needed (keeps the first paint fast).
+let plotlyLoading = null;
+function loadPlotly() {
+  if (window.Plotly) return Promise.resolve();
+  if (!plotlyLoading) plotlyLoading = new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = "static/plotly.min.js"; s.async = true; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+  return plotlyLoading;
+}
+async function preact(...args) { await loadPlotly(); return Plotly.react(...args); }
+
 async function api(path, body) {
   const opt = body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {};
   const r = await fetch((window.ODYSSEY_API || "") + path, opt);
@@ -110,7 +123,7 @@ async function build() {
 }
 
 function loadLayers(layers) {
-  S.layers = layers;
+  S.layers = { ...(S.layers || {}), ...layers };   // /api/risk sends only the cost layer
   return Promise.all(Object.entries(layers).map(([k, src]) => new Promise((res) => {
     const im = new Image(); im.onload = () => { S.images[k] = im; res(); }; im.src = src;
   })));
@@ -134,13 +147,28 @@ async function setRisk() {
 async function plan() {
   busy(true, "Planning routes…");
   try {
-    S.plan = await api("/api/plan", { start: S.start, goal: S.goal, algo: $("algo").value });
+    const algo = $("algo").value;
+    // fast planners first; RRT* (slow, pure Python) follows in the background unless it is selected
+    S.plan = await api("/api/plan", { start: S.start, goal: S.goal, algo, rrt: algo === "rrt" });
     S.start = S.plan.start; S.goal = S.plan.goal;
     stages(STAGES.slice(0, 6));
     renderCompare(); flowUpdate();
     draw();
   } catch (e) { console.error(e); }
   busy(false);
+  // small delay so quick follow-up calls (targets) reach the server before the slow RRT* job
+  const p = S.plan;
+  if (p && p.comparison.some((c) => c.pending)) setTimeout(() => fetchRrt(p), 250);
+}
+
+async function fetchRrt(p) {
+  try {
+    const r = await api("/api/rrt", { start: p.start, goal: p.goal });
+    if (S.plan !== p) return;   // a newer plan replaced this one
+    p.comparison = p.comparison.map((c) => (c.key === "rrt" ? r.entry : c));
+    p.tree = r.tree;
+    renderCompare(); draw();
+  } catch (e) { console.error(e); }
 }
 
 async function loadTargets() {
@@ -501,7 +529,7 @@ function renderCompare() {
   const sel = $("algo").value;
   const rows = S.plan.comparison.map((c) => {
     const s = c.stats, st = ALGO_STYLE[c.key];
-    if (!s) return `<tr><td>${c.label}</td><td colspan="8">no path found</td></tr>`;
+    if (!s) return `<tr><td>${c.label}</td><td colspan="10">${c.pending ? "computing…" : "no path found"}</td></tr>`;
     return `<tr class="${c.key === sel ? "sel" : ""}"><td><i class="swatch" style="background:${st.color}"></i>${c.label}</td>
       <td>${fmt(s.length_m, 0)} m</td><td>${fmt(s.energy_wh, 0)} Wh</td><td>${fmt(s.drive_time_h, 1)} h</td>
       <td><b>${pct(s.p_success, 1)}</b></td><td>${fmt(s.hazard_exposure, 2)}</td><td>${fmt(s.max_slope, 1)}°</td>
@@ -513,7 +541,7 @@ function renderCompare() {
   const best = Math.max(...S.plan.comparison.filter((c) => c.stats).map((c) => c.stats.p_success));
   $("routeCards").innerHTML = S.plan.comparison.map((c) => {
     const s = c.stats, col = ALGO_STYLE[c.key].color;
-    if (!s) return `<div class="rcard" style="--c:${col}"><div class="nm">${c.label}</div><div class="big">—</div><div class="facts">no path</div></div>`;
+    if (!s) return `<div class="rcard" style="--c:${col}"><div class="nm">${c.label}</div><div class="big">—</div><div class="facts">${c.pending ? "computing…" : "no path"}</div></div>`;
     return `<div class="rcard ${c.key === sel ? "sel" : ""}" data-k="${c.key}" style="--c:${col}">
       ${s.p_success === best ? '<span class="badge">safest</span>' : ""}
       <div class="nm">${c.label}</div>
@@ -556,16 +584,16 @@ function renderModel() {
   const base = { paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)", font: { color: "#f0f0fa", family: "-apple-system, BlinkMacSystemFont, Inter, sans-serif", size: 11 }, margin: { l: 110, r: 10, t: 10, b: 70 } };
   const cfg = { displayModeBar: false, responsive: true };
   const cm = m.confusion.map((row) => { const s = row.reduce((a, b) => a + b, 0) || 1; return row.map((v) => v / s); });
-  Plotly.react("plotCM", [{ z: cm, x: S.summary.classes, y: S.summary.classes, type: "heatmap", colorscale: [[0, "#000"], [1, "#fff"]], showscale: false,
+  preact("plotCM", [{ z: cm, x: S.summary.classes, y: S.summary.classes, type: "heatmap", colorscale: [[0, "#000"], [1, "#fff"]], showscale: false,
     text: m.confusion, texttemplate: "%{z:.0%}", textfont: { color: "#888" } }], { ...base, yaxis: { autorange: "reversed" } }, cfg);
-  Plotly.react("plotSel", [{ x: m.selective.map((s) => s[0] * 100), y: m.selective.map((s) => s[1] * 100), type: "scatter", mode: "lines+markers", line: { color: "#fff" } }],
+  preact("plotSel", [{ x: m.selective.map((s) => s[0] * 100), y: m.selective.map((s) => s[1] * 100), type: "scatter", mode: "lines+markers", line: { color: "#fff" } }],
     { ...base, margin: { l: 50, r: 10, t: 10, b: 50 }, xaxis: { title: "coverage: % most-confident pixels kept", gridcolor: "#222" }, yaxis: { title: "accuracy %", gridcolor: "#222" } }, cfg);
-  Plotly.react("plotRel", [
+  preact("plotRel", [
     { x: [0, 1], y: [0, 1], mode: "lines", line: { color: "#555", dash: "dot" }, name: "perfect" },
     { x: m.reliability.map((r) => r[0]), y: m.reliability.map((r) => r[1]), mode: "lines+markers", line: { color: "#fff" }, name: "model" }],
     { ...base, margin: { l: 50, r: 10, t: 10, b: 50 }, showlegend: false, xaxis: { title: "predicted confidence", gridcolor: "#222" }, yaxis: { title: "observed accuracy", gridcolor: "#222" } }, cfg);
   const fi = m.feature_importance.slice().reverse();
-  Plotly.react("plotFI", [{ x: fi.map((f) => f[1]), y: fi.map((f) => f[0]), type: "bar", orientation: "h", marker: { color: "#fff" } }],
+  preact("plotFI", [{ x: fi.map((f) => f[1]), y: fi.map((f) => f[0]), type: "bar", orientation: "h", marker: { color: "#fff" } }],
     { ...base, margin: { l: 160, r: 10, t: 10, b: 40 }, xaxis: { gridcolor: "#222" } }, cfg);
   $("imgPred").src = S.layers.class;
   $("imgTruth").src = S.layers.truth;
@@ -590,7 +618,7 @@ function render3d() {
   else if (S.tour && S.tour.path.length) data.push(path3(S.tour.path, "#ffb347", "science tour", 6));
   data.push({ type: "scatter3d", mode: "markers+text", name: "targets", x: S.targets.map((t) => t.c * S.cell), y: S.targets.map((t) => t.r * S.cell),
     z: S.targets.map((t) => zAt(t.r, t.c) + 3), text: S.targets.map((t) => t.id), textfont: { color: "#fff" }, marker: { size: 5, color: "#8fd3ff" } });
-  Plotly.react("plot3d", data, {
+  preact("plot3d", data, {
     paper_bgcolor: "#0a0a0a", font: { color: "#f0f0fa", family: "-apple-system, BlinkMacSystemFont, Inter, sans-serif" }, margin: { l: 0, r: 0, t: 0, b: 0 },
     legend: { x: 0.01, y: 0.98 },
     scene: { aspectmode: "manual", aspectratio: { x: 1, y: 1, z: 0.28 }, xaxis: { title: "x (m)", color: "#888" }, yaxis: { title: "y (m)", color: "#888", autorange: "reversed" }, zaxis: { title: "z (m)", color: "#888" }, bgcolor: "#0a0a0a",
@@ -620,7 +648,7 @@ async function loadBench() {
   }
   $("benchKpis").innerHTML = kp.map(([a, b, c]) => `<div class="kpi"><span>${a}</span><b>${b}</b><small>${c}</small></div>`).join("");
   const col = { procedural: "#ffffff", jezero: "#ffb347" };
-  Plotly.react("plotBenchAcc", ks.map((t) => ({ type: "box", y: T[t].rows.map((r) => r.accuracy * 100), name: names[t], boxpoints: "all", jitter: 0.4,
+  preact("plotBenchAcc", ks.map((t) => ({ type: "box", y: T[t].rows.map((r) => r.accuracy * 100), name: names[t], boxpoints: "all", jitter: 0.4,
     pointpos: 0, marker: { color: col[t], size: 6 }, line: { color: col[t] }, fillcolor: "rgba(255,255,255,0.04)" })),
     { ...PBASE, margin: { l: 50, r: 10, t: 10, b: 40 }, showlegend: false, yaxis: { title: "accuracy %", gridcolor: "#222" } }, PCFG);
   const tr = [];
@@ -631,7 +659,7 @@ async function loadBench() {
       hovertemplate: "%{text}<br>baseline %{x:.0f}%<br>A* %{y:.0f}%<extra></extra>" });
   }
   tr.push({ x: [0, 100], y: [0, 100], mode: "lines", line: { color: "#555", dash: "dot" }, name: "equal", hoverinfo: "skip" });
-  Plotly.react("plotBenchSafe", tr, { ...PBASE, margin: { l: 55, r: 10, t: 10, b: 50 }, legend: { x: 0.62, y: 0.2 },
+  preact("plotBenchSafe", tr, { ...PBASE, margin: { l: 55, r: 10, t: 10, b: 50 }, legend: { x: 0.62, y: 0.2 },
     xaxis: { title: "no-risk route · safe %", range: [0, 100], gridcolor: "#1c1c20" },
     yaxis: { title: "A* · safe %", range: [0, 100], gridcolor: "#1c1c20" },
     annotations: [{ x: 72, y: 34, text: "above line = A* safer", showarrow: false, font: { color: "#8a8a92" } }] }, PCFG);
@@ -759,5 +787,5 @@ $("btnPlay").addEventListener("click", () => {
 });
 $("scrub").addEventListener("input", () => { if (!S.sim) return; S.playing = false; $("btnPlay").textContent = "Play"; S.step = +$("scrub").value; onStep(); });
 
-build();
-loadBench().catch((e) => console.error(e));
+// world first; benchmark charts (and the Plotly library) load after it, so they never delay the map
+build().then(() => loadBench()).catch((e) => console.error(e));

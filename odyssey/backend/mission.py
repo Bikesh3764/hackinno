@@ -100,8 +100,11 @@ class Mission:
             elevation=np.round(c["elev"][::2, ::2], 2).tolist(),
         )
 
-    def layers(self):
+    def layers(self, only=None):
         c, w = self.ctx, self.world
+        if only == "cost":   # the only layer that depends on the Caution setting
+            cost = np.log(np.where(np.isfinite(c["cost"]), c["cost"], np.nan))
+            return {"cost": render.to_png(render.scalar(cost, "viridis", mask=c["lethal"], mask_color=(120, 10, 20)))}
         hs = c["hillshade"]
         L = {}
         L["visible"] = render.false_color(w.bands)
@@ -123,7 +126,26 @@ class Mission:
         return {k: render.to_png(v) for k, v in L.items()}
 
     # ------------------------------------------------------------ planning
-    def plan(self, start, goal, algo="astar"):
+    def _rrt(self, start, goal):
+        """RRT* is the slowest planner (pure Python), so its result is cached per cost map."""
+        c = self.ctx
+        key = (id(c["cost"]), tuple(start), tuple(goal))
+        if getattr(self, "_rrt_key", None) != key:
+            self._rrt_key, self._rrt_res = key, rrt_star(c["cost"], c["cell"], start, goal)
+        return self._rrt_res
+
+    def plan_rrt(self, start, goal):
+        """RRT* alone, so the console can show the fast planners first and add RRT* when ready."""
+        c = self.ctx
+        start = nearest_free(c["blocked"], tuple(start))
+        goal = nearest_free(c["blocked"], tuple(goal))
+        r = self._rrt(start, goal)
+        st = path_stats(r["path"], c) if r["found"] else None
+        return dict(start=start, goal=goal, tree=r.get("tree", []),
+                    entry=dict(key="rrt", label="RRT*", found=r["found"], expanded=r["expanded"], ms=r["ms"],
+                               stats=st, path=r["path"]))
+
+    def plan(self, start, goal, algo="astar", rrt=True):
         c = self.ctx
         start = nearest_free(c["blocked"], tuple(start))
         goal = nearest_free(c["blocked"], tuple(goal))
@@ -131,7 +153,8 @@ class Mission:
         runs = {}
         runs["astar"] = astar(c["cost"], c["elev"], c["cell"], start, goal, True)
         runs["dijkstra"] = astar(c["cost"], c["elev"], c["cell"], start, goal, False)
-        runs["rrt"] = rrt_star(c["cost"], c["cell"], start, goal)
+        rrt = rrt or algo == "rrt"
+        runs["rrt"] = self._rrt(start, goal) if rrt else dict(path=[], found=False, expanded=0, ms=0.0)
         # baseline: shortest path that only avoids lethal cells (ignores risk / terrain)
         flat = np.where(c["lethal"], np.inf, 1.0)
         runs["naive"] = astar(flat, c["elev"], c["cell"], start, goal, True)
@@ -141,7 +164,7 @@ class Mission:
             r = runs[k]
             st = path_stats(r["path"], c) if r["found"] else None
             comp.append(dict(key=k, label=label, found=r["found"], expanded=r["expanded"], ms=r["ms"],
-                             stats=st, path=r["path"]))
+                             stats=st, path=r["path"], pending=(k == "rrt" and not rrt)))
         out["comparison"] = comp
         out["selected"] = algo
         out["tree"] = runs["rrt"].get("tree", [])

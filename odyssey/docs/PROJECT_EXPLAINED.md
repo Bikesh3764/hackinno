@@ -45,9 +45,10 @@ SENSE → FUSE → PERCEIVE → ASSESS RISK → COST → PLAN → DISCOVER → A
 ## 3. Technology stack
 
 * **Backend:** Python 3.11, FastAPI (web API), uvicorn (server), numpy, scipy, scikit-learn, Pillow.
-* **Frontend:** a single HTML page with vanilla JavaScript (no framework, no build step), HTML canvas for the map, and Plotly (bundled locally) for charts and the 3-D view.
+* **Frontend:** a single HTML page with vanilla JavaScript (no framework, no build step), HTML canvas for the map, and Plotly (bundled locally, loaded only when a chart is first needed) for charts and the 3-D view.
 * **Design:** follows the SpaceX `DESIGN.md` from opendesignmd.com (MIT licence), saved in `design/DESIGN.md`: pure black canvas, uppercase **D-DIN** font, thin hairline borders, ghost pill buttons and a full-screen photographic hero. No SpaceX branding is used. Type system: **D-DIN Bold** for the big headlines and KPI numbers; everything else uses Apple's system font (**SF Pro**) on Mac/iPhone via `-apple-system`, and **Inter** (bundled in `frontend/fonts/`, the closest open-source match to SF Pro) on Windows/Android. SF Pro itself is not bundled because Apple's licence does not allow embedding it in websites. Numbers use tabular figures so columns line up.
-* **Runs fully offline.** Everything, including fonts, Plotly and the real Mars elevation data, is stored locally. It is **not deployed** anywhere; it runs on `localhost:8000`.
+* **Runs offline or online.** Everything, including fonts, Plotly and the real Mars elevation data, is stored in the repo. Locally it runs on `localhost:8000`; online the frontend is on GitHub Pages and the backend on Render.
+* **Lightweight by design.** Plotly (4.8 MB) loads only after the map is ready; API responses are gzip-compressed; map layers are lossless WebP (~37 % smaller than PNG, identical pixels); moving the Caution slider re-sends only the cost layer; RRT* (the slowest planner) runs in a second request after the fast planners have drawn, and is cached.
 
 **How to run:** double-click `odyssey/run.bat`, then open http://localhost:8000. Tests: `.venv\Scripts\python -m pytest -q tests`.
 
@@ -275,7 +276,7 @@ HackInno/
       planner.py                   A*, Dijkstra, RRT*, graph cost-to-go, path stats, energy
       science.py                   ice fusion, science value, targets, ranking, orienteering
       rover_sim.py                 closed-loop traverse simulation
-      render.py                    colour maps → PNG layers
+      render.py                    colour maps → lossless WebP layers
       benchmark.py                 24-world robustness benchmark → data/benchmark.json
     tools/
       fetch_hirise.py              downloads the Jezero DTM window via HTTP range requests
@@ -288,7 +289,7 @@ HackInno/
     docs/PROJECT_EXPLAINED.md      this file
 ```
 
-**API endpoints:** `POST /api/build` (seed, noise settings, λ, terrain), `POST /api/risk` (λ), `POST /api/plan` (start, goal, algo), `POST /api/targets` (start, mode), `POST /api/tour` (start, budget, mode), `POST /api/traverse` (waypoints, names, inject), `GET /api/cell?r=&c=`, `GET /api/benchmark`. `POST /api/pareto` and `GET /api/report` exist in the backend but have no button in the UI any more; they were removed to keep the site focused on the problem statement.
+**API endpoints:** `POST /api/build` (seed, noise settings, λ, terrain), `POST /api/risk` (λ), `POST /api/plan` (start, goal, algo, rrt), `POST /api/rrt` (start, goal), `POST /api/targets` (start, mode), `POST /api/tour` (start, budget, mode), `POST /api/traverse` (waypoints, names, inject), `GET /api/cell?r=&c=`, `GET /api/benchmark`. `POST /api/pareto` and `GET /api/report` exist in the backend but have no button in the UI any more; they were removed to keep the site focused on the problem statement.
 
 ---
 

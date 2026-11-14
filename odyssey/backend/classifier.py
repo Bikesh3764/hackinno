@@ -75,7 +75,7 @@ def train_and_predict(world, geo, n_trees=80, seed=0):
     lab, pid = lab.ravel(), pid.ravel()
     tr = lab >= 0
     rf = RandomForestClassifier(n_estimators=n_trees, max_depth=16, min_samples_leaf=2,
-                                max_features="sqrt", oob_score=True, n_jobs=-1,
+                                max_features="sqrt", oob_score=True, n_jobs=1,
                                 class_weight="balanced", random_state=seed)
     rf.fit(X[tr], lab[tr])
 
@@ -112,7 +112,7 @@ def train_and_predict(world, geo, n_trees=80, seed=0):
         if te_m.all() or not te_m.any():
             continue
         m_ = RandomForestClassifier(n_estimators=40, max_depth=16, min_samples_leaf=2, max_features="sqrt",
-                                    n_jobs=-1, class_weight="balanced", random_state=seed + f)
+                                    n_jobs=1, class_weight="balanced", random_state=seed + f)
         m_.fit(Xtr[~te_m], y[~te_m])
         cv[np.ix_(te_m, m_.classes_)] = m_.predict_proba(Xtr[te_m])
     best_T, best_nll = 1.0, np.inf

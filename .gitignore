@@ -5,3 +5,5 @@ __pycache__/
 .pytest_cache/
 odyssey/data/hero_dtm.npy
 _site/
+odyssey/docs/deck/_local/
+odyssey/docs/deck/preview.html
