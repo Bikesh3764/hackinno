@@ -1,0 +1,25 @@
+procedural 1 {'accuracy': 0.9260267294958768, 'p_safe_astar': 0.036772106781649785, 'p_safe_naive': 0.0010558530043405722, 'hazard_cells_entered': 0, 'ice_correct': 2, 'ice_checks': 2}
+procedural 2 {'accuracy': 0.9481623028134656, 'p_safe_astar': 0.8036357605997172, 'p_safe_naive': 0.26477938845791976, 'hazard_cells_entered': 0, 'ice_correct': 5, 'ice_checks': 5}
+procedural 3 {'accuracy': 0.8741147741147741, 'p_safe_astar': 0.3204356289478631, 'p_safe_naive': 0.0006174609086032817, 'hazard_cells_entered': 0, 'ice_correct': 4, 'ice_checks': 5}
+procedural 4 {'accuracy': 0.9184121690324155, 'p_safe_astar': 0.5288396328455416, 'p_safe_naive': 0.0018061396483550277, 'hazard_cells_entered': 0, 'ice_correct': 4, 'ice_checks': 4}
+procedural 5 {'accuracy': 0.9296089840094397, 'p_safe_astar': 0.8503324681717742, 'p_safe_naive': 0.0776249628432822, 'hazard_cells_entered': 0, 'ice_correct': 4, 'ice_checks': 4}
+procedural 6 {'accuracy': 0.9262571649254034, 'p_safe_astar': 0.5179148488291683, 'p_safe_naive': 0.18924776481499964, 'hazard_cells_entered': 0, 'ice_correct': 4, 'ice_checks': 4}
+procedural 7 {'accuracy': 0.9478009683062777, 'p_safe_astar': 0.5614960058301935, 'p_safe_naive': 0.15312841527061027, 'hazard_cells_entered': 0, 'ice_correct': 4, 'ice_checks': 4}
+procedural 8 {'accuracy': 0.916138726445744, 'p_safe_astar': 0.29342070954807276, 'p_safe_naive': 0.10618216319776111, 'hazard_cells_entered': 0, 'ice_correct': 0, 'ice_checks': 0}
+procedural 9 {'accuracy': 0.8923327232052064, 'p_safe_astar': 0.39187354701570914, 'p_safe_naive': 0.051350731376258146, 'hazard_cells_entered': 0, 'ice_correct': 5, 'ice_checks': 5}
+procedural 10 {'accuracy': 0.9296032553407935, 'p_safe_astar': 0.696330000576696, 'p_safe_naive': 0.15035574383390143, 'hazard_cells_entered': 0, 'ice_correct': 3, 'ice_checks': 3}
+procedural 11 {'accuracy': 0.9346056808008464, 'p_safe_astar': 0.5848930981939785, 'p_safe_naive': 0.010193134230390385, 'hazard_cells_entered': 0, 'ice_correct': 4, 'ice_checks': 4}
+procedural 12 {'accuracy': 0.9319686446529385, 'p_safe_astar': 0.38208142845347054, 'p_safe_naive': 0.12403056850722127, 'hazard_cells_entered': 0, 'ice_correct': 3, 'ice_checks': 4}
+jezero 1 {'accuracy': 0.9502562433905475, 'p_safe_astar': 0.9931457730365008, 'p_safe_naive': 0.05864598074834984, 'hazard_cells_entered': 0, 'ice_correct': 4, 'ice_checks': 6}
+jezero 2 {'accuracy': 0.9272557231732607, 'p_safe_astar': 0.8604735234548089, 'p_safe_naive': 0.3454252750791051, 'hazard_cells_entered': 0, 'ice_correct': 5, 'ice_checks': 6}
+jezero 3 {'accuracy': 0.9360032526936369, 'p_safe_astar': 0.9992435123576046, 'p_safe_naive': 0.7109345594536336, 'hazard_cells_entered': 0, 'ice_correct': 7, 'ice_checks': 7}
+jezero 4 {'accuracy': 0.8923852502337684, 'p_safe_astar': 0.9411933158917628, 'p_safe_naive': 0.37774303995607567, 'hazard_cells_entered': 0, 'ice_correct': 5, 'ice_checks': 5}
+jezero 5 {'accuracy': 0.9382801382394795, 'p_safe_astar': 0.960031362992538, 'p_safe_naive': 0.6404403933535662, 'hazard_cells_entered': 0, 'ice_correct': 5, 'ice_checks': 5}
+jezero 6 {'accuracy': 0.9512383586156411, 'p_safe_astar': 0.9553006313713917, 'p_safe_naive': 0.751776061029496, 'hazard_cells_entered': 0, 'ice_correct': 6, 'ice_checks': 6}
+jezero 7 {'accuracy': 0.90646078829744, 'p_safe_astar': 0.9921780337162276, 'p_safe_naive': 0.34936253139981904, 'hazard_cells_entered': 0, 'ice_correct': 5, 'ice_checks': 7}
+jezero 8 {'accuracy': 0.9447019598276002, 'p_safe_astar': 0.6709012173456395, 'p_safe_naive': 0.2647758235822014, 'hazard_cells_entered': 0, 'ice_correct': 6, 'ice_checks': 6}
+jezero 9 {'accuracy': 0.9543108003739685, 'p_safe_astar': 0.9884988266655659, 'p_safe_naive': 0.5933144902467914, 'hazard_cells_entered': 0, 'ice_correct': 6, 'ice_checks': 6}
+jezero 10 {'accuracy': 0.9279814460674615, 'p_safe_astar': 0.8357072385369039, 'p_safe_naive': 0.5514483493574472, 'hazard_cells_entered': 0, 'ice_correct': 6, 'ice_checks': 6}
+jezero 11 {'accuracy': 0.9439381611065907, 'p_safe_astar': 0.9556276789596998, 'p_safe_naive': 0.3909522817104128, 'hazard_cells_entered': 0, 'ice_correct': 5, 'ice_checks': 5}
+jezero 12 {'accuracy': 0.9278912671929682, 'p_safe_astar': 0.9399988686766784, 'p_safe_naive': 0.2502911275367837, 'hazard_cells_entered': 0, 'ice_correct': 5, 'ice_checks': 6}
+wrote C:\Users\Bikesh Ray\OneDrive\Desktop\HackInno\odyssey\data\benchmark.json in 88s

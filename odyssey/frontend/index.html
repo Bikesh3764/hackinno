@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="MARS-09 Odyssey: uncertainty-aware autonomous Mars rover navigation.">
+<title>MARS-09 Odyssey</title>
+<link rel="preload" href="static/hero.jpg" as="image">
+<link rel="preload" href="static/fonts/Inter-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="static/style.css">
+<script src="static/config.js"></script>
+<script src="static/plotly.min.js"></script>
+</head>
+<body>
+<nav class="nav" id="nav">
+  <div class="brand">MARS-09 <span>// ODYSSEY</span></div>
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-view="map">Map</button>
+    <button class="tab" data-view="terrain3d">3D</button>
+    <button class="tab" data-view="model">AI model</button>
+    <button class="tab" data-view="about">How it works</button>
+  </div>
+  <div class="chips">
+    <div class="chip"><span>Status</span><b id="chipStatus">BOOTING</b></div>
+  </div>
+</nav>
+
+<header class="hero" id="hero">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="eyebrow">Track A · Autonomous Mars navigation</div>
+    <h1>See. Decide. Drive.<br>Without waiting<br>for Earth.</h1>
+    <p class="lead">Maps the terrain, knows <em>how sure</em> it is, and drives safely to the best science, including hidden ice.</p>
+    <div class="cta">
+      <button class="pill hero-pill" id="btnLaunch">Launch mission <span class="chev">&rsaquo;</span></button>
+      <a class="textlink" href="#console" id="lnkExplore">Explore &darr;</a>
+    </div>
+  </div>
+  <div class="hero-foot">
+    <div class="kpis" id="kpis"></div>
+    <div class="hero-meta">
+      <ol class="stages" id="stages">
+        <li data-s="sense">Sense</li><li data-s="fuse">Fuse</li><li data-s="perceive">Perceive</li><li data-s="risk">Risk</li>
+        <li data-s="cost">Cost</li><li data-s="plan">Plan</li><li data-s="discover">Discover</li><li data-s="act">Act</li>
+      </ol>
+      <div class="source" id="sourceLine">—</div>
+    </div>
+  </div>
+  <div class="hero-caption">Real HiRISE terrain · Jezero crater</div>
+</header>
+
+<section class="bandhead" id="console">
+  <div class="eyebrow" id="bandEyebrow">01 · Map</div>
+  <h2 id="bandTitle">Perceive. Plan. Drive.</h2>
+  <p id="bandLead">Click anywhere on the map to see why.</p>
+</section>
+
+<!-- ====================== MAP VIEW ====================== -->
+<main id="view-map" class="view active">
+  <div class="flow" id="flow">
+    <div class="fsteps">
+      <div class="fstep" data-f="perceive"><i>1</i><div><b>Perceive</b><small id="fs-perceive">building map…</small></div></div>
+      <div class="fstep" data-f="plan"><i>2</i><div><b>Plan</b><small id="fs-plan">—</small></div></div>
+      <div class="fstep" data-f="science"><i>3</i><div><b>Science</b><small id="fs-science">—</small></div></div>
+      <div class="fstep" data-f="drive"><i>4</i><div><b>Drive</b><small id="fs-drive">—</small></div></div>
+    </div>
+    <button class="pill solid" id="btnNext">Next</button>
+  </div>
+
+  <aside class="panel controls">
+    <section class="demo">
+      <button class="pill solid big" id="btnDemo">&#9654; Run full mission</button>
+    </section>
+
+    <section>
+      <h3><i class="num">1</i>Terrain</h3>
+      <div class="seg" id="terrainSeg">
+        <button data-t="procedural" class="on" title="Generated craters, cliffs, dunes and boulders">Simulated</button>
+        <button data-t="jezero" title="Real HiRISE elevation of Jezero crater">Real Mars</button>
+      </div>
+      <p class="note" id="terrainNote">Generated world</p>
+      <label>World seed <input id="seed" type="number" value="7" min="0" max="9999"></label>
+      <details class="adv">
+        <summary>Sensor noise</summary>
+        <label title="Height error of the orbital elevation map">Height noise <output id="demNoiseV">0.35 m</output>
+          <input id="demNoise" type="range" min="0.05" max="1.0" step="0.05" value="0.35"></label>
+        <label title="Share of the elevation map with no data">Missing data <output id="dropoutV">4 %</output>
+          <input id="dropout" type="range" min="0" max="0.15" step="0.01" value="0.04"></label>
+        <label title="Noise in the colour bands">Color noise <output id="specV">0.008</output>
+          <input id="spec" type="range" min="0.002" max="0.03" step="0.002" value="0.008"></label>
+      </details>
+      <button class="pill" id="btnBuild">Generate</button>
+    </section>
+
+    <section>
+      <h3><i class="num">2</i>Route</h3>
+      <label title="How strongly the rover avoids risky or uncertain ground">Caution <output id="lamV">1.0</output>
+        <input id="lam" type="range" min="0" max="3" step="0.25" value="1"></label>
+      <label>Planner
+        <select id="algo">
+          <option value="astar">A* · risk-aware</option>
+          <option value="dijkstra">Dijkstra</option>
+          <option value="rrt">RRT*</option>
+          <option value="naive">Shortest · no risk</option>
+        </select></label>
+      <div class="seg" id="clickMode" title="What a click on the map does">
+        <button data-mode="inspect" class="on">Inspect</button>
+        <button data-mode="start">Start</button>
+        <button data-mode="goal">Goal</button>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" id="showAlts" checked> Show all planners</label>
+        <label><input type="checkbox" id="showTree"> Show RRT* tree</label>
+      </div>
+      <button class="pill" id="btnPlan">Plan route</button>
+    </section>
+
+    <section>
+      <h3><i class="num">3</i>Science</h3>
+      <label>Rank by
+        <select id="mode">
+          <option value="expected">Best value</option>
+          <option value="explore">Explore · mean + σ</option>
+          <option value="conservative">Safe bet · mean − σ</option>
+        </select></label>
+      <button class="pill" id="btnTour">Plan tour</button>
+    </section>
+
+    <section>
+      <h3><i class="num">4</i>Drive</h3>
+      <div class="checks">
+        <label title="Hide a boulder field the orbiter cannot see"><input type="checkbox" id="inject" checked> Surprise boulders</label>
+      </div>
+      <button class="pill solid" id="btnDrive">Drive</button>
+      <div class="player">
+        <button class="pill small" id="btnPlay">Pause</button>
+        <input id="scrub" type="range" min="0" max="0" value="0" aria-label="Replay position">
+      </div>
+    </section>
+  </aside>
+
+  <section class="panel mapcol">
+    <div class="layerbar" id="layerbar"></div>
+    <div class="canvaswrap">
+      <canvas id="map" width="800" height="800"></canvas>
+      <div class="maphint" id="mapHint">Click the map to inspect</div>
+      <div class="hover" id="hover"></div>
+      <div class="busy" id="busy"><span>Working…</span></div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <p class="layerdesc" id="layerdesc"></p>
+  </section>
+
+  <aside class="panel side">
+    <div class="sidetabs" role="tablist">
+      <button data-st="inspect" class="on">Inspector</button>
+      <button data-st="targets">Targets <i id="tgtCount"></i></button>
+      <button data-st="log">Log <i id="logCount"></i></button>
+    </div>
+    <section class="stab on" id="st-inspect">
+      <div id="inspector" class="inspector"><p class="empty">Click any spot on the map.</p></div>
+    </section>
+    <section class="stab" id="st-targets">
+      <div class="stabnote" id="targetsNote"></div>
+      <div id="targets" class="targets"></div>
+    </section>
+    <section class="stab" id="st-log">
+      <div class="stabnote" id="logNote"></div>
+      <div id="log" class="log"><p class="empty">Press Drive to see the rover’s decisions.</p></div>
+    </section>
+  </aside>
+
+  <section class="panel wide routes">
+    <div class="rhead"><h3>Routes compared</h3><span class="muted">same start and goal · click a card to select</span></div>
+    <div id="routeCards" class="rcards"></div>
+    <div id="breakdown"></div>
+    <details class="adv tablebox"><summary>Full numbers</summary><div id="compare"></div></details>
+  </section>
+</main>
+
+<!-- ====================== 3D ====================== -->
+<main id="view-terrain3d" class="view">
+  <section class="panel full">
+    <h3>3D terrain <small>drag to rotate</small></h3>
+    <div id="plot3d" class="plot3d"></div>
+  </section>
+</main>
+
+<!-- ====================== MODEL ====================== -->
+<main id="view-model" class="view">
+  <section class="panel full">
+    <h3>Terrain AI · tested on unseen pixels</h3>
+    <div class="kpis inline" id="modelKpis"></div>
+    <div class="grid2">
+      <div class="card"><h4>Confusion matrix</h4><div id="plotCM" class="plot"></div></div>
+      <div class="card"><h4>Confidence vs accuracy</h4><div id="plotSel" class="plot"></div></div>
+      <div class="card"><h4>Calibration</h4><div id="plotRel" class="plot"></div></div>
+      <div class="card"><h4>Top features</h4><div id="plotFI" class="plot"></div></div>
+      <div class="card"><h4>Predicted</h4><img id="imgPred" class="mapimg" alt="Predicted terrain classes"></div>
+      <div class="card"><h4>Truth (hidden)</h4><img id="imgTruth" class="mapimg" alt="Ground truth terrain classes"></div>
+    </div>
+  </section>
+  <section class="panel full">
+    <h3>Robustness <small id="benchNote">24 worlds</small></h3>
+    <div class="kpis inline" id="benchKpis"></div>
+    <div class="grid2">
+      <div class="card"><h4>Accuracy per world</h4><div id="plotBenchAcc" class="plot"></div></div>
+      <div class="card"><h4>Safety: A* vs no-risk route</h4><div id="plotBenchSafe" class="plot"></div></div>
+    </div>
+    <details class="adv tablebox"><summary>All 24 runs</summary><div id="benchTable" class="tablewrap"></div></details>
+  </section>
+</main>
+
+<!-- ====================== ABOUT ====================== -->
+<main id="view-about" class="view">
+  <section class="panel full prose">
+    <h3>Pipeline</h3>
+    <ol class="pipeline">
+      <li><b>Sense</b><span>Elevation map, 6-band camera, heat, neutron and rover 3D points, all noisy.</span></li>
+      <li><b>Fuse</b><span>Merge orbit and rover heights, fill gaps, keep an error bar per cell.</span></li>
+      <li><b>Perceive</b><span>Slope, roughness and terrain type from a Random Forest, with uncertainty.</span></li>
+      <li><b>Risk</b><span>Chance each cell is too steep, rough or rocky. Above 50 % is off-limits.</span></li>
+      <li><b>Cost</b><span>Hard, risky or uncertain ground costs more to cross.</span></li>
+      <li><b>Plan</b><span>A*, Dijkstra and RRT* find the cheapest safe route.</span></li>
+      <li><b>Discover</b><span>Find and rank science spots, including buried ice, with confidence ranges.</span></li>
+      <li><b>Act</b><span>Drive, spot new hazards, replan on board, verify predictions on site.</span></li>
+    </ol>
+    <h3 style="margin-top:40px">Data</h3>
+    <div class="kv prov">
+      <span>Simulated</span><b>Generated terrain with known truth.</b>
+      <span>Real Mars</span><b>HiRISE elevation of Jezero crater (USGS / Univ. of Arizona), 2 m cells.</b>
+      <span>Labels</span><b>4 % of pixels used for training; the rest for testing.</b>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+<footer class="foot">MARS-09 Odyssey · HackInnovision 2026</footer>
+<script src="static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "source": "HiRISE DTM DTEEC_023524_1985_023379_1985_U01 (USGS), Jezero crater, Mars",
+  "url": "https://hirise-pds.lpl.arizona.edu/PDS/DTM/ESP/ORB_023500_023599/ESP_023524_1985_ESP_023379_1985/DTEEC_023524_1985_023379_1985_U01.IMG",
+  "row0": 10629,
+  "col0": 1440,
+  "size_px": 320,
+  "m_per_px": 1.0096633268711,
+  "relief_m": 31.7841796875,
+  "steep_frac": 0.025771484375,
+  "min_elev": -2648.15380859375,
+  "max_elev": -2616.36962890625
+}
