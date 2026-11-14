@@ -175,3 +175,9 @@ tr.sel td { background: rgba(255,179,71,.07); }
 @media (prefers-reduced-motion: reduce) {
   .rcard:hover, .tgt:hover { transform: none; }
 }
+
+/* native dropdown list: dark rows, readable text (Windows/Chrome draw it with the page colours) */
+select { color-scheme: dark; color: #f2f2f4; }
+select option, select optgroup { background-color: #141418; color: #f2f2f4; }
+select option:checked { background-color: #3a2a14; color: #ffffff; }
+select option:disabled { color: #6b6b74; }
