@@ -8,6 +8,7 @@
 <link rel="preload" href="static/hero.jpg" as="image">
 <link rel="preload" href="static/fonts/Inter-var.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="static/style.css">
+<link rel="stylesheet" href="static/premium.css">
 <script src="static/config.js"></script>
 </head>
 <body>
@@ -26,6 +27,7 @@
 
 <header class="hero" id="hero">
   <div class="hero-bg" aria-hidden="true"></div>
+  <img class="hero-contours" src="static/contours.png" alt="" aria-hidden="true">
   <div class="hero-inner">
     <div class="eyebrow">Track A · Autonomous Mars navigation</div>
     <h1>See. Decide. Drive.<br>Without waiting<br>for Earth.</h1>
@@ -234,7 +236,11 @@
 </main>
 
 <div class="toast" id="toast"></div>
-<footer class="foot">MARS-09 Odyssey · HackInnovision 2026</footer>
+<footer class="foot">
+  <div class="fb">MARS-09 <span>//</span> ODYSSEY</div>
+  <div>Team Algo Coders · HackInnovision 2026 · Track A</div>
+  <nav><a href="https://github.com/Bikesh3764/hackinno" target="_blank" rel="noopener">GitHub</a><a href="#console">Console</a><a href="#hero">Top</a></nav>
+</footer>
 <script src="static/app.js"></script>
 </body>
 </html>

@@ -237,6 +237,7 @@ function play() {
   raf = requestAnimationFrame(tick);
 }
 function onStep() {
+  fillRange($("scrub"));
   const f = S.sim.frames[S.step];
   document.querySelectorAll("#log .e").forEach((el) => el.classList.toggle("future", +el.dataset.step > S.step));
   draw();
@@ -584,16 +585,16 @@ function renderModel() {
   const base = { paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)", font: { color: "#f0f0fa", family: "-apple-system, BlinkMacSystemFont, Inter, sans-serif", size: 11 }, margin: { l: 110, r: 10, t: 10, b: 70 } };
   const cfg = { displayModeBar: false, responsive: true };
   const cm = m.confusion.map((row) => { const s = row.reduce((a, b) => a + b, 0) || 1; return row.map((v) => v / s); });
-  preact("plotCM", [{ z: cm, x: S.summary.classes, y: S.summary.classes, type: "heatmap", colorscale: [[0, "#000"], [1, "#fff"]], showscale: false,
-    text: m.confusion, texttemplate: "%{z:.0%}", textfont: { color: "#888" } }], { ...base, yaxis: { autorange: "reversed" } }, cfg);
-  preact("plotSel", [{ x: m.selective.map((s) => s[0] * 100), y: m.selective.map((s) => s[1] * 100), type: "scatter", mode: "lines+markers", line: { color: "#fff" } }],
+  preact("plotCM", [{ z: cm, x: S.summary.classes, y: S.summary.classes, type: "heatmap", colorscale: [[0, "#0a0a0d"], [0.35, "#3a2410"], [1, "#c9681f"]], showscale: false,
+    text: m.confusion, texttemplate: "%{z:.0%}", textfont: { color: "#ffffff" } }], { ...base, yaxis: { autorange: "reversed" } }, cfg);
+  preact("plotSel", [{ x: m.selective.map((s) => s[0] * 100), y: m.selective.map((s) => s[1] * 100), type: "scatter", mode: "lines+markers", line: { color: "#ffb347", width: 2.5 }, marker: { color: "#fff", size: 7 } }],
     { ...base, margin: { l: 50, r: 10, t: 10, b: 50 }, xaxis: { title: "coverage: % most-confident pixels kept", gridcolor: "#222" }, yaxis: { title: "accuracy %", gridcolor: "#222" } }, cfg);
   preact("plotRel", [
     { x: [0, 1], y: [0, 1], mode: "lines", line: { color: "#555", dash: "dot" }, name: "perfect" },
-    { x: m.reliability.map((r) => r[0]), y: m.reliability.map((r) => r[1]), mode: "lines+markers", line: { color: "#fff" }, name: "model" }],
+    { x: m.reliability.map((r) => r[0]), y: m.reliability.map((r) => r[1]), mode: "lines+markers", line: { color: "#ffb347", width: 2.5 }, marker: { color: "#fff", size: 7 }, name: "model" }],
     { ...base, margin: { l: 50, r: 10, t: 10, b: 50 }, showlegend: false, xaxis: { title: "predicted confidence", gridcolor: "#222" }, yaxis: { title: "observed accuracy", gridcolor: "#222" } }, cfg);
   const fi = m.feature_importance.slice().reverse();
-  preact("plotFI", [{ x: fi.map((f) => f[1]), y: fi.map((f) => f[0]), type: "bar", orientation: "h", marker: { color: "#fff" } }],
+  preact("plotFI", [{ x: fi.map((f) => f[1]), y: fi.map((f) => f[0]), type: "bar", orientation: "h", marker: { color: "#ffb347" } }],
     { ...base, margin: { l: 160, r: 10, t: 10, b: 40 }, xaxis: { gridcolor: "#222" } }, cfg);
   $("imgPred").src = S.layers.class;
   $("imgTruth").src = S.layers.truth;
@@ -765,6 +766,12 @@ document.querySelectorAll("#clickMode button").forEach((b) => b.addEventListener
   S.clickMode = b.dataset.mode;
   document.querySelectorAll("#clickMode button").forEach((x) => x.classList.toggle("on", x === b));
 }));
+// premium sliders: paint the filled part of every range track (CSS reads --p)
+function fillRange(el) {
+  const min = +el.min || 0, max = +el.max || 100;
+  el.style.setProperty("--p", `${((+el.value - min) / (max - min || 1)) * 100}%`);
+}
+document.querySelectorAll('input[type="range"]').forEach((el) => { el.addEventListener("input", () => fillRange(el)); fillRange(el); });
 const bindOut = (id, out, f) => { const u = () => ($(out).textContent = f(+$(id).value)); $(id).addEventListener("input", u); u(); };
 bindOut("demNoise", "demNoiseV", (v) => v.toFixed(2) + " m");
 bindOut("dropout", "dropoutV", (v) => Math.round(v * 100) + " %");
