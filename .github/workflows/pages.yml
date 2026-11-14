@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  API_BASE: https://hackinno.onrender.com
+  API_BASE: https://hackinno-4vza.onrender.com
 
 jobs:
   deploy:

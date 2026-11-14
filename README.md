@@ -7,7 +7,7 @@ plans a safe route, ranks science targets (including buried water ice) with conf
 and replans on board when it discovers hazards the orbiter missed.
 
 * **Live app (frontend, GitHub Pages):** https://bikesh3764.github.io/hackinno/
-* **Live backend (Render):** https://hackinno.onrender.com
+* **Live backend (Render):** https://hackinno-4vza.onrender.com
   (free tier: the first request after idle can take ~1 minute while the server wakes up)
 
 ## What's inside
